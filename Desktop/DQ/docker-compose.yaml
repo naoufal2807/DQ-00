@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: dq_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dq_user
+      POSTGRES_PASSWORD: dq_password
+      POSTGRES_DB: dq_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - dq_postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: dq_api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      # IMPORTANT: host is the *service name* "postgres", not localhost
+      DATABASE_URL: "postgresql://dq_user:dq_password@postgres:5432/dq_db"
+      # optional: configure your data dirs for DQ
+      DQ_DATA_RAW_DIR: "/app/data/raw"
+      DQ_DATA_PARQUET_DIR: "/app/data/parquet"
+      OPENROUTER_API_KEY: "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"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - dq_data_raw:/app/data/raw
+      - dq_data_parquet:/app/data/parquet
+
+volumes:
+  dq_postgres_data:
+  dq_data_raw:
+  dq_data_parquet:
